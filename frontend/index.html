@@ -473,7 +473,7 @@
     </div>
 
     <script>
-        const ws = new WebSocket("ws://127.0.0.1:8080/ws");
+        const ws = new WebSocket("wss://glowing-guide-49w6pxv4pr43qwwj-8080.app.github.dev/ws");
         const statusText = document.getElementById("status-text"), popup = document.getElementById("alert-popup");
         const logEl = document.getElementById("event-log"), cube = document.getElementById("sensor-cube");
         let isAlertActive = false;
@@ -588,7 +588,7 @@
         async function openFhirModal() {
             document.getElementById("fhir-modal").style.display = "block";
             try {
-                const res = await fetch("http://127.0.0.1:8080/api/fhir/history");
+                const res = await fetch("https://glowing-guide-49w6pxv4pr43qwwj-8080.app.github.dev/api/fhir/history");
                 const data = await res.json();
                 document.getElementById("fhir-json-display").innerText = JSON.stringify(data, null, 2);
             } catch (e) { document.getElementById("fhir-json-display").innerText = "Failed to fetch clinical records."; }
