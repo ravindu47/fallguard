@@ -1,0 +1,47 @@
+[package]
+name = "backend"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "backend"
+path = "src/main.rs"
+
+[[bin]]
+name = "simulator"
+path = "src/bin/simulator.rs"
+
+[dependencies]
+# Web Framework
+actix-web = "4"
+actix-ws = "0.2"
+actix-rt = "2"
+
+# Data Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async & Utilities
+tokio = { version = "1", features = ["full"] }
+futures-util = "0.3"
+dotenv = "0.15"
+url = "2.5"
+
+# Database (Postgres)
+sqlx = { version = "0.7", features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "chrono",
+    "uuid",
+] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# WebSocket Client (For Simulator)
+tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
+uuid = { version = "1.7", features = ["v4", "serde"] }
+rand = "0.9.2"
+actix-cors = "0.7"

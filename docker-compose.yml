@@ -1,0 +1,16 @@
+services:
+  # This acts as your Database Server
+  db:
+    image: postgres:15
+    container_name: fallguard_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: fallguard
+    ports:
+      - "5432:5432" # Allows your laptop to talk to the container
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FallGuard Command Center</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --panel-bg: #161b22;
+            --border: #30363d;
+            --text-main: #c9d1d9;
+            --accent: #58a6ff;
+            --alert: #da3633;
+            --success: #2ea043;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            grid-template-rows: 60px 100px 1fr;
+            gap: 15px;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: var(--panel-bg);
+            padding: 0 20px;
+            border-radius: 6px;
+        }
+
+        .brand {
+            font-size: 1.5em;
+            color: var(--accent);
+            letter-spacing: 2px;
+        }
+
+        .secure-badge {
+            background: #0f2e1b;
+            color: #2ea043;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #2ea043;
+            font-size: 0.8em;
+        }
+
+        .vitals-panel {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+            display: flex;
+            gap: 15px;
+        }
+
+        .vital-card {
+            flex: 1;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 20px;
+        }
+
+        .vital-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .vital-unit {
+            font-size: 0.5em;
+            color: #8b949e;
+        }
+
+        .heart-dot {
+            width: 8px;
+            height: 8px;
+            background: #da3633;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+            animation: beat 1s infinite;
+        }
+
+        @keyframes beat {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+        }
+
+        #chart-container {
+            grid-column: 1 / 2;
+            grid-row: 3 / 4;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            position: relative;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chart {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+        }
+
+        #side-panel {
+            grid-column: 2 / 3;
+            grid-row: 2 / 4;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        .viz-container {
+            height: 150px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 600px;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .telemetry-box,
+        .diag-box {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .log-container {
+            flex-grow: 1;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 0.8em;
+            min-height: 100px;
+        }
+
+        .diag-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.8em;
+            align-items: center;
+        }
+
+        .bar-bg {
+            width: 80px;
+            height: 6px;
+            background: #30363d;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: #2ea043;
+            transition: width 0.5s;
+        }
+
+        .tele-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        .tele-table td {
+            padding: 4px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        #alert-popup {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 500px;
+            background: rgba(22, 27, 34, 0.95);
+            border: 2px solid var(--alert);
+            box-shadow: 0 0 30px rgba(218, 54, 51, 0.4);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .alert-btn {
+            background: white;
+            color: #da3633;
+            border: none;
+            padding: 12px 18px;
+            font-size: 0.9em;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: inherit;
+        }
+
+        .dispatch-btn {
+            background: #da3633;
+            color: white;
+            border: 2px solid white;
+            padding: 12px 18px;
+            font-size: 0.9em;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: inherit;
+            animation: pulse 1s infinite;
+        }
+
+        .stable-btn {
+            background: #2ea043;
+            color: white;
+            border: 2px solid white;
+            padding: 12px 18px;
+            font-size: 0.9em;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: inherit;
+            display: none;
+        }
+
+        .fhir-btn {
+            background: #1f6feb;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            font-size: 0.75em;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* FHIR MODAL */
+        #fhir-modal {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background-color: #0d1117;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #30363d;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 6px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #fhir-json-display {
+            color: #a5d6ff;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+
+        .cube {
+            width: 60px;
+            height: 60px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.1s linear;
+        }
+
+        .face {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: rgba(88, 166, 255, 0.1);
+            border: 2px solid var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .front {
+            transform: translateZ(30px);
+        }
+
+        .back {
+            transform: rotateY(180deg) translateZ(30px);
+        }
+
+        .right {
+            transform: rotateY(90deg) translateZ(30px);
+        }
+
+        .left {
+            transform: rotateY(-90deg) translateZ(30px);
+        }
+
+        .top {
+            transform: rotateX(90deg) translateZ(30px);
+        }
+
+        .bottom {
+            transform: rotateX(-90deg) translateZ(30px);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand"><i class="fas fa-heartbeat"></i> FallGuard ICU</div>
+        <div style="display:flex; gap:20px; align-items:center;">
+            <div>PATIENT: <b>John Doe</b></div>
+            <div class="secure-badge"><i class="fas fa-lock"></i> SECURE</div>
+        </div>
+    </header>
+
+    <div class="vitals-panel">
+        <div class="vital-card" style="border-left: 4px solid #da3633;">
+            <div class="vital-label">HEART RATE <span class="heart-dot"></span></div>
+            <div id="bpm-val" class="vital-value">72 <span class="vital-unit">BPM</span></div>
+        </div>
+        <div class="vital-card" style="border-left: 4px solid #58a6ff;">
+            <div class="vital-label">OXYGEN (SpO2)</div>
+            <div id="spo2-val" class="vital-value">98 <span class="vital-unit">%</span></div>
+        </div>
+        <div class="vital-card" style="border-left: 4px solid #2ea043;">
+            <div class="vital-label">STATUS</div>
+            <div id="status-text" class="vital-value" style="color: #2ea043; font-size: 1.5em;">STABLE</div>
+            <div id="validating-text" style="color: #d29922; font-size: 0.8em; display: none;">VALIDATING...</div>
+        </div>
+    </div>
+
+    <div id="chart-container">
+        <div id="alert-popup">
+            <h1 style="color: #da3633; margin: 0; animation: blink 1s infinite;">⚠️ FALL DETECTED</h1>
+            <div style="color: #c9d1d9; margin: 10px 0;">FORCE: <span id="alert-g">0.00</span> G</div>
+            <div class="btn-group">
+                <button id="btn-false-alarm" class="alert-btn" onclick="markFalseAlarm()">MARK FALSE ALARM</button>
+                <button id="btn-dispatch" class="dispatch-btn" onclick="confirmFall()">🚑 DISPATCH TEAM</button>
+                <button id="btn-stable" class="stable-btn" onclick="markStable()">✅ MARK AS STABLE</button>
+            </div>
+        </div>
+        <div id="chart"></div>
+    </div>
+
+    <div id="side-panel">
+        <div class="viz-container">
+            <div id="sensor-cube" class="cube">
+                <div class="face front">F</div>
+                <div class="face back">B</div>
+                <div class="face right">R</div>
+                <div class="face left">L</div>
+                <div class="face top">T</div>
+                <div class="face bottom">B</div>
+            </div>
+        </div>
+        <div class="telemetry-box">
+            <table class="tele-table">
+                <tr>
+                    <td>X-AXIS</td>
+                    <td id="val-x" style="text-align:right">0.00</td>
+                    <td>m/s²</td>
+                </tr>
+                <tr>
+                    <td>Y-AXIS</td>
+                    <td id="val-y" style="text-align:right">0.00</td>
+                    <td>m/s²</td>
+                </tr>
+                <tr>
+                    <td>Z-AXIS</td>
+                    <td id="val-z" style="text-align:right">0.00</td>
+                    <td>m/s²</td>
+                </tr>
+                <tr style="border-top:1px solid #444; color:white">
+                    <td>TOTAL</td>
+                    <td id="val-g" style="text-align:right">1.00</td>
+                    <td>G</td>
+                </tr>
+            </table>
+        </div>
+        <div class="diag-box">
+            <div class="diag-row"><span>WI-FI</span>
+                <div class="bar-bg">
+                    <div id="wifi-bar" class="bar-fill"></div>
+                </div><span id="wifi-txt">0%</span>
+            </div>
+            <div class="diag-row"><span>TEMP</span>
+                <div class="bar-bg">
+                    <div id="temp-bar" class="bar-fill" style="background:#58a6ff"></div>
+                </div><span id="temp-txt">0°C</span>
+            </div>
+        </div>
+        <div class="log-container">
+            <div
+                style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:5px;">
+                <span>EVENT LOG</span>
+                <button class="fhir-btn" onclick="openFhirModal()">FHIR R4</button>
+            </div>
+            <div id="event-log"></div>
+        </div>
+    </div>
+
+    <div id="fhir-modal">
+        <div class="modal-content">
+            <span style="float:right; cursor:pointer; font-size:24px" onclick="closeFhirModal()">&times;</span>
+            <h2 style="color:#58a6ff; margin-top:0">HL7 FHIR R4 Observations</h2>
+            <div id="fhir-json-display">Loading clinical data...</div>
+        </div>
+    </div>
+
+    <script>
+        const ws = new WebSocket("ws://127.0.0.1:8080/ws");
+        const statusText = document.getElementById("status-text"), popup = document.getElementById("alert-popup");
+        const logEl = document.getElementById("event-log"), cube = document.getElementById("sensor-cube");
+        let isAlertActive = false;
+
+        // D3 Chart Init
+        const chartDiv = document.getElementById("chart"), width = chartDiv.clientWidth, height = chartDiv.clientHeight;
+        const svg = d3.select("#chart").append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${width} ${height}`).append("g");
+        const n = 100, x = d3.scaleLinear().domain([0, n - 1]).range([0, width]), y = d3.scaleLinear().domain([0, 5]).range([height, 0]);
+        const line = d3.line().x((d, i) => x(i)).y(d => y(d)).curve(d3.curveBasis);
+        let dataPoints = new Array(n).fill(1.0);
+        const path = svg.append("path").datum(dataPoints).attr("fill", "none").attr("stroke", "#2ea043").attr("stroke-width", 2).attr("d", line);
+
+        ws.onmessage = (event) => {
+            const msg = event.data;
+            if (msg === "CANCEL_ALERT") {
+                markFalseAlarm(false);
+                addLogEntry({ detected_at: new Date(), is_false_alarm: true, g_force_value: 0 });
+                return;
+            }
+            if (msg === "CONFIRMED") {
+                addLogEntry({ detected_at: new Date(), severity: "Assistance Sent", g_force_value: 0 });
+                return;
+            }
+            if (msg === "RESET_COMPLETE") {
+                resetUI();
+                addLogEntry({ detected_at: new Date(), severity: "Resolved", g_force_value: 0 });
+                return;
+            }
+
+            // --- RESTORED HANDLERS ---
+            if (msg === "VALIDATING") {
+                statusText.style.display = "none";
+                document.getElementById("validating-text").style.display = "block";
+                return;
+            }
+            if (msg === "NEAR_MISS") {
+                resetUI();
+                addLogEntry({ detected_at: new Date(), severity: "Near Miss", g_force_value: 0 });
+                return;
+            }
+
+            try {
+                const data = JSON.parse(msg);
+
+                // Handle Critical Fall Object
+                if (data.type === "CRITICAL_FALL") {
+                    triggerAlert(data.g_force);
+                    return;
+                }
+                const gForce = Math.sqrt(data.x ** 2 + data.y ** 2 + data.z ** 2) / 9.8;
+                // Local triggerAlert removed. Handled by CRITICAL_FALL message.
+
+                document.getElementById("val-x").innerText = data.x.toFixed(2);
+                document.getElementById("val-y").innerText = data.y.toFixed(2);
+                document.getElementById("val-z").innerText = data.z.toFixed(2);
+                document.getElementById("val-g").innerText = gForce.toFixed(2);
+                cube.style.transform = `rotateX(${data.y * 5}deg) rotateY(${data.x * 5}deg)`;
+
+                dataPoints.shift(); dataPoints.push(gForce);
+                path.attr("d", line).attr("stroke", isAlertActive ? "#da3633" : "#2ea043");
+
+                document.getElementById("wifi-bar").style.width = (data.wifi || 0) + "%";
+                document.getElementById("wifi-txt").innerText = (data.wifi || 0) + "%";
+                document.getElementById("temp-bar").style.width = ((data.temp || 0) / 80) * 100 + "%";
+                document.getElementById("temp-txt").innerText = (data.temp || 0).toFixed(1) + "°C";
+            } catch (e) { }
+        };
+
+        function triggerAlert(g) {
+            isAlertActive = true; popup.style.display = "block";
+            document.getElementById("alert-g").innerText = g.toFixed(2);
+            statusText.innerText = "CRITICAL"; statusText.style.color = "#da3633";
+            document.getElementById("btn-dispatch").style.display = "inline-block";
+            document.getElementById("btn-false-alarm").style.display = "inline-block";
+            document.getElementById("btn-stable").style.display = "none";
+        }
+
+        function confirmFall() {
+            ws.send(JSON.stringify({ action: "CONFIRM_FALL" }));
+            document.getElementById("btn-dispatch").style.display = "none";
+            document.getElementById("btn-false-alarm").style.display = "none";
+            document.getElementById("btn-stable").style.display = "inline-block";
+            statusText.innerText = "HELP DISPATCHED"; statusText.style.color = "#58a6ff";
+        }
+
+        function markStable() { ws.send(JSON.stringify({ action: "RESET_SYSTEM" })); }
+
+        function markFalseAlarm(send = true) {
+            if (send) ws.send(JSON.stringify({ action: "CANCEL_ALERT" }));
+            resetUI();
+        }
+
+        function resetUI() {
+            isAlertActive = false; popup.style.display = "none";
+            document.getElementById("validating-text").style.display = "none";
+            statusText.style.display = "block";
+            statusText.innerText = "STABLE"; statusText.style.color = "#2ea043";
+        }
+
+        function addLogEntry(log) {
+            const time = new Date(log.detected_at).toLocaleTimeString();
+            let color = "#da3633", icon = "⚠️", text = `FALL DETECTED (${log.g_force_value.toFixed(2)}G)`;
+            if (log.is_false_alarm) { color = "#2ea043"; icon = "🛡️"; text = "FALSE ALARM"; }
+            else if (log.severity === "Assistance Sent") { color = "#58a6ff"; icon = "🚑"; text = "DISPATCHED"; }
+            else if (log.severity === "Resolved") { color = "#2ea043"; icon = "✅"; text = "STABILIZED"; }
+            else if (log.severity === "Near Miss") { color = "#8b949e"; icon = "⚠️"; text = "Near Miss (Movement Detected)"; }
+
+            logEl.innerHTML = `<div style="color:${color}; margin-bottom:8px; border-bottom:1px solid #222; padding-bottom:3px;">
+                <span style="opacity:0.5">[${time}]</span> ${icon} ${text}</div>` + logEl.innerHTML;
+        }
+
+        async function openFhirModal() {
+            document.getElementById("fhir-modal").style.display = "block";
+            try {
+                const res = await fetch("http://127.0.0.1:8080/api/fhir/history");
+                const data = await res.json();
+                document.getElementById("fhir-json-display").innerText = JSON.stringify(data, null, 2);
+            } catch (e) { document.getElementById("fhir-json-display").innerText = "Failed to fetch clinical records."; }
+        }
+        function closeFhirModal() { document.getElementById("fhir-modal").style.display = "none"; }
+
+        // Vitals Mocking
+        setInterval(() => {
+            document.getElementById("bpm-val").innerHTML = (70 + Math.floor(Math.random() * 10)) + ' <span class="vital-unit">BPM</span>';
+            document.getElementById("spo2-val").innerHTML = (96 + Math.floor(Math.random() * 4)) + ' <span class="vital-unit">%</span>';
+        }, 3000);
+    </script>
+</body>
+
+</html>
