@@ -17,7 +17,6 @@
 - [Technical Implementation](#-technical-implementation)
 - [Getting Started](#-getting-started)
 - [API Reference](#-api-reference)
-- [Contributors](#-contributors)
 
 ---
 
