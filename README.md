@@ -17,6 +17,7 @@
 - [Technical Implementation](#-technical-implementation)
 - [Getting Started](#-getting-started)
 - [API Reference](#-api-reference)
+- [Project Team](#-project-team)
 
 ---
 
@@ -158,6 +159,39 @@ Returns clinical observations compliant with **HL7 FHIR Release 4**.
 
 ```
 
+---
+
+## 👥 Project Team
+
+| Name / ID | Role | Key Contributions |
+| --- | --- | --- |
+| **Chameesha Ravindu Wijewickrama Kankanamalage**<br>
+
+<br>*(22404656)* | **Lead Architect & Frontend Engineer** | • **System Architecture & Leadership:** Designed the overall project roadmap and solved critical integration problems between the hardware, backend, and frontend layers.<br>
+
+<br>• **Clinical Dashboard:** Developed the real-time ICU Command Center using **D3.js**, enabling high-frequency visualization of G-force telemetry.<br>
+
+<br>• **Integration Logic:** Served as the bridge between raw hardware data and clinical metrics, translating LSB sensor values into human-readable health data.<br>
+
+<br>• **Bi-Directional Control:** Engineered the client-side control logic allowing operators to send "Dispatch" or "Reset" commands back to the Rust core. |
+| **Vidanapathiranage Ruwan Chamara**<br>
+
+<br>*(22403812)* | **Edge & Embedded Systems Engineer** | • **Hardware Integration:** Handled physical wiring and I2C protocol configuration for the MPU-6050 and Raspberry Pi Zero 2 W.<br>
+
+<br>• **Embedded Software:** Wrote the Python ingestion script (`fallguard.py`) to serialize raw sensor data and transmit it via Secure WebSockets.<br>
+
+<br>• **OS Management:** Configured the "headless" Linux environment, ensuring autonomous boot and network connectivity without peripherals. |
+| **Sajana Ransika Abeyrathna**<br>
+
+<br>*(22404659)* | **Backend & Infrastructure Engineer** | • **Core Server:** Built the high-concurrency Rust (Actix-Web) backend with the Actor model for real-time streaming.<br>
+
+<br>• **Infrastructure:** Managed PostgreSQL via Docker and utilized SQLx for type-safe database interactions.<br>
+
+<br>• **Compliance:** Implemented **HL7 FHIR R4** standards for medical interoperability and mapped internal models to LOINC/SNOMED CT codes.<br>
+
+<br>• **QA:** Wrote extensive unit tests to mathematically verify the physics logic of the fall detection algorithm. |
+
+---
 
 > This project is for educational and research purposes.
 
